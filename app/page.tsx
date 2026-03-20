@@ -102,7 +102,7 @@ export default function Home() {
         </Link>
       </div>
 
-      {/* Portfolio Header Section */}
+      {/* Portfolio Header Section o */}
       <PortfolioHeader portfolio={portfolio} />
 
       {/* Videos Grid Section */}
