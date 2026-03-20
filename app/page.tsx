@@ -15,6 +15,8 @@ interface Portfolio {
   profile_picture_url?: string
   bitmoji_url?: string
   bio?: string
+  name?: string
+  roles?: string[]
 }
 
 export default function Home() {

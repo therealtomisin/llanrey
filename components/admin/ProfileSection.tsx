@@ -14,6 +14,8 @@ interface Portfolio {
   profile_picture_url?: string
   bitmoji_url?: string
   bio?: string
+  name?: string
+  roles?: string[]
 }
 
 export default function ProfileSection() {
@@ -21,6 +23,9 @@ export default function ProfileSection() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [bio, setBio] = useState('')
+  const [name, setName] = useState('')
+  const [roles, setRoles] = useState<string[]>([])
+  const [roleInput, setRoleInput] = useState('')
 
   useEffect(() => {
     const fetchPortfolio = async () => {
@@ -55,6 +60,8 @@ export default function ProfileSection() {
       if (portfolioData) {
         setPortfolio(portfolioData)
         setBio(portfolioData.bio || '')
+        setName(portfolioData.name || '')
+        setRoles(portfolioData.roles || [])
       }
 
       setLoading(false)
@@ -124,7 +131,7 @@ export default function ProfileSection() {
     }
   }
 
-  const handleSaveBio = async () => {
+  const handleSaveProfile = async () => {
     if (!portfolio?.id) return
 
     setSaving(true)
@@ -132,20 +139,35 @@ export default function ProfileSection() {
       const supabase = createClient()
       const { data, error } = await supabase
         .from('portfolio_config')
-        .update({ bio })
+        .update({ bio, name, roles })
         .eq('id', portfolio.id)
         .select()
 
       if (!error && data) {
         setPortfolio(data[0])
-        toast.success('Bio saved!')
+        toast.success('Profile saved!')
       }
     } catch (error) {
       console.error('Save failed:', error)
-      toast.error('Failed to save bio. Please try again.')
+      toast.error('Failed to save. Please try again.')
     } finally {
       setSaving(false)
     }
+  }
+
+  const addRole = () => {
+    const trimmed = roleInput.trim()
+    if (!trimmed || roles.length >= 3) return
+    if (roles.includes(trimmed)) {
+      toast.error('Role already added')
+      return
+    }
+    setRoles([...roles, trimmed])
+    setRoleInput('')
+  }
+
+  const removeRole = (index: number) => {
+    setRoles(roles.filter((_, i) => i !== index))
   }
 
   if (loading) {
@@ -278,6 +300,59 @@ export default function ProfileSection() {
           </label>
         </div>
 
+        {/* Name */}
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">
+            Name
+          </label>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Your full name"
+          />
+        </div>
+
+        {/* Roles */}
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">
+            Roles ({roles.length}/3)
+          </label>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {roles.map((role, index) => (
+              <span
+                key={index}
+                className="inline-flex items-center gap-1 px-3 py-1 text-sm rounded-full bg-primary/10 text-primary border border-primary/20"
+              >
+                {role}
+                <button
+                  onClick={() => removeRole(index)}
+                  className="ml-1 hover:text-destructive"
+                >
+                  &times;
+                </button>
+              </span>
+            ))}
+          </div>
+          {roles.length < 3 && (
+            <div className="flex gap-2">
+              <Input
+                value={roleInput}
+                onChange={(e) => setRoleInput(e.target.value)}
+                placeholder="e.g. Videographer"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    addRole()
+                  }
+                }}
+              />
+              <Button variant="outline" onClick={addRole} type="button">
+                Add
+              </Button>
+            </div>
+          )}
+        </div>
+
         {/* Bio */}
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">
@@ -289,14 +364,15 @@ export default function ProfileSection() {
             placeholder="Write a brief bio about yourself..."
             className="w-full h-32 px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-accent resize-none"
           />
-          <Button
-            onClick={handleSaveBio}
-            disabled={saving}
-            className="w-full mt-3"
-          >
-            {saving ? 'Saving...' : 'Save Bio'}
-          </Button>
         </div>
+
+        <Button
+          onClick={handleSaveProfile}
+          disabled={saving}
+          className="w-full"
+        >
+          {saving ? 'Saving...' : 'Save Profile'}
+        </Button>
       </CardContent>
     </Card>
   )
